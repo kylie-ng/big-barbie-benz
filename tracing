@@ -1,0 +1,168 @@
+// Defining sensors
+#define LED_PIN 9
+#define IR_PIN A0
+#define IR_PIN A1
+#define IR_PIN A2
+#define IR_PIN A3
+
+// Including motorshield library
+#include <Adafruit_MotorShield.h>
+
+#include <stdbool.h>
+
+// Defining motor pins
+#define MOTOR_topRight_TERMINAL 1       //A = M1 = TOP RIGHT
+#define MOTOR_topLeft_TERMINAL 2        //B = M2 = TOP LEFT
+#define MOTOR_bottomLeft_TERMINAL 3    //C = M3 = BOTTOM LEFT
+#define MOTOR_bottomRight_TERMINAL 4     //D = M4 = BOTTOM RIGHT
+
+// Instantiating the motorshield
+Adafruit_MotorShield AFMS = Adafruit_MotorShield(); // default board constructor
+
+// Accessing the motors from the motorshield
+Adafruit_DCMotor *MOTOR_topRight = AFMS.getMotor(MOTOR_topRight_TERMINAL);
+Adafruit_DCMotor *MOTOR_topLeft = AFMS.getMotor(MOTOR_topLeft_TERMINAL);
+Adafruit_DCMotor *MOTOR_bottomLeft = AFMS.getMotor(MOTOR_bottomLeft_TERMINAL);
+Adafruit_DCMotor *MOTOR_bottomRight = AFMS.getMotor(MOTOR_bottomRight_TERMINAL);
+
+bool slowTouch = false;
+bool stopTouch = false;
+
+void setup() { // setup helper function
+  // put your setup code here, to run once:
+
+  // Set up LED
+  pinMode(LED_PIN, INPUT);
+
+  // Turn on the motorshield and PWM driver
+  AFMS.begin();
+  // Reset Motor A
+  MOTOR_topRight->setSpeed(0);
+  MOTOR_topRight->run(RELEASE);
+  // Reset Motor B
+  MOTOR_topLeft->setSpeed(0);
+  MOTOR_topLeft->run(RELEASE);
+  // Reset Motor C
+  MOTOR_bottomLeft->setSpeed(0);
+  MOTOR_bottomLeft->run(RELEASE);
+  // Reset Motor D
+  MOTOR_bottomRight->setSpeed(0);
+  MOTOR_bottomRight->run(RELEASE);
+}
+
+void loop() { // main loop
+  // put your main code here, to run repeatedly:
+
+  //top sensor
+  int upRightSensor = digitalRead(A0);
+
+  //top left sensor
+  int upLeftSensor = digitalRead(A3);
+
+  //left sensor
+  int leftSensor = digitalRead(A1);
+
+  //right sensor
+  int rightSensor = digitalRead(A2); 
+
+
+ 
+  //if right & left = white (0) | black (1) then keep going straight
+  //else if right = black (1) then turn left
+  //else if left = black (1) then turn right
+
+    // Serial.print("topSensor before: ");
+    // Serial.println(topSensor);
+    // Serial.print("touch before: ");
+    // Serial.println(touch);
+    if (upRightSensor == 0){
+      slowTouch = flip(slowTouch);
+    // Serial.print("topSensor after: ");
+    // Serial.println(topSensor);
+    // Serial.print("touch after: ");
+    // Serial.println(touch);
+    delay(250);
+    }
+
+    if (upLeftSensor == 0){
+      stopTouch = flip(stopTouch);
+    // Serial.print("topSensor after: ");
+    // Serial.println(topSensor);
+    // Serial.print("touch after: ");
+    // Serial.println(touch);
+    delay(250);
+    }
+    
+    //normal speed
+    if (slowTouch == false && stopTouch == false){
+      if ((rightSensor==0 && leftSensor==0) || (rightSensor==1 && leftSensor==1)){
+        //Go straight forward
+        move(255, 255);
+
+      } else if (rightSensor==1 && leftSensor==0){
+        //Turn left, right motor runs only
+        move(1, 255);
+
+      } else if (rightSensor==0 && leftSensor==1){
+        //Turn right, left motor runs only
+        move(255, 1);
+
+      }
+    } else if (slowTouch == true && stopTouch == false){
+        if ((rightSensor==0 && leftSensor==0) || (rightSensor==1 && leftSensor==1)){
+          //Go straight forward
+          move(75, 75);
+
+        } else if (rightSensor==1 && leftSensor==0){
+          //Turn left, right motor runs only
+          move(1, 75);
+
+        } else if (rightSensor==0 && leftSensor==1){
+          //Turn right, left motor runs only
+          move(75, 1);
+
+        }
+    } else if (stopTouch == true){
+      stop();
+    }
+    
+}
+
+void move(int leftSpeed, int rightSpeed){
+    MOTOR_topRight->run(FORWARD);
+    MOTOR_topLeft->run(FORWARD); 
+    MOTOR_bottomLeft->run(BACKWARD);
+    MOTOR_bottomRight->run(BACKWARD);
+
+    MOTOR_topRight->setSpeed(rightSpeed);
+    MOTOR_topLeft->setSpeed(leftSpeed);
+    MOTOR_bottomLeft->setSpeed(leftSpeed);
+    MOTOR_bottomRight->setSpeed(rightSpeed);
+}
+
+void stop (){
+    MOTOR_topRight->run(FORWARD);
+    MOTOR_topLeft->run(FORWARD); 
+    MOTOR_bottomLeft->run(BACKWARD);
+    MOTOR_bottomRight->run(BACKWARD);
+
+    MOTOR_topRight->setSpeed(0);
+    MOTOR_topRight->run(RELEASE);
+
+    MOTOR_topLeft->setSpeed(0);
+    MOTOR_topLeft->run(RELEASE);
+
+    MOTOR_bottomLeft->setSpeed(0);
+    MOTOR_bottomLeft->run(RELEASE);
+
+    MOTOR_bottomRight->setSpeed(0);
+    MOTOR_bottomRight->run(RELEASE);
+}
+
+bool flip(bool touch){
+  if (touch==false){
+    return true;
+  } else if (touch == true){
+    return false;
+  }
+}
